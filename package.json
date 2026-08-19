@@ -1,0 +1,37 @@
+{
+  "name": "reachinbox-email-scheduler",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-grade email scheduling platform with BullMQ, Redis, PostgreSQL and Google OAuth",
+  "scripts": {
+    "dev": "concurrently \"pnpm dev:api\" \"pnpm dev:worker\" \"pnpm dev:web\"",
+    "dev:api": "pnpm --filter @reachinbox/api dev",
+    "dev:worker": "pnpm --filter @reachinbox/api worker",
+    "dev:web": "pnpm --filter @reachinbox/web dev",
+    "build": "pnpm --filter @reachinbox/api build && pnpm --filter @reachinbox/web build",
+    "db:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
+    "db:migrate:deploy": "prisma migrate deploy --schema=./prisma/schema.prisma",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio --schema=./prisma/schema.prisma",
+    "db:generate": "prisma generate --schema=./prisma/schema.prisma",
+    "test": "pnpm --filter @reachinbox/api test",
+    "test:load": "tsx scripts/loadTest.ts",
+    "lint": "pnpm --filter @reachinbox/api lint && pnpm --filter @reachinbox/web lint",
+    "typecheck": "pnpm --filter @reachinbox/api typecheck && pnpm --filter @reachinbox/web typecheck"
+  },
+  "devDependencies": {
+    "@types/redis": "^4.0.11",
+    "concurrently": "^8.2.2",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "dependencies": {
+    "@prisma/client": "5.22.0",
+    "redis": "^6.2.1"
+  }
+}

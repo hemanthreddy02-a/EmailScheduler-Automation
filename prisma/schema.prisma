@@ -1,0 +1,107 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum EmailJobStatus {
+  SCHEDULED
+  PROCESSING
+  SENT
+  FAILED
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id         String   @id @default(uuid())
+  googleId   String   @unique @map("google_id")
+  name       String
+  email      String   @unique
+  avatarUrl  String?  @map("avatar_url")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  senders    Sender[]
+  batches    EmailBatch[]
+  emailJobs  EmailJob[]
+
+  @@map("users")
+}
+
+model Sender {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  email        String
+  smtpHost     String   @map("smtp_host")
+  smtpPort     Int      @map("smtp_port")
+  smtpUser     String   @map("smtp_user")
+  smtpPassword String   @map("smtp_password")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  batches    EmailBatch[]
+  emailJobs  EmailJob[]
+
+  @@index([userId])
+  @@map("senders")
+}
+
+model EmailBatch {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  senderId         String   @map("sender_id")
+  subject          String
+  body             String
+  startTime        DateTime @map("start_time")
+  delayMs          Int      @map("delay_ms")
+  hourlyLimit      Int      @map("hourly_limit")
+  totalRecipients  Int      @map("total_recipients")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sender    Sender     @relation(fields: [senderId], references: [id])
+  emailJobs EmailJob[]
+
+  @@index([userId])
+  @@map("email_batches")
+}
+
+model EmailJob {
+  id           String         @id @default(uuid())
+  batchId      String         @map("batch_id")
+  userId       String         @map("user_id")
+  senderId     String         @map("sender_id")
+  recipient    String
+  subject      String
+  body         String
+  scheduledAt  DateTime       @map("scheduled_at")
+  sentAt       DateTime?      @map("sent_at")
+  status       EmailJobStatus @default(SCHEDULED)
+  attempts     Int            @default(0)
+  bullJobId    String?        @map("bull_job_id")
+  errorMessage String?        @map("error_message")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  batch  EmailBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  user   User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sender Sender     @relation(fields: [senderId], references: [id])
+
+  // Indexes for efficient querying
+  @@index([userId, status])
+  @@index([status, scheduledAt])
+  @@index([senderId, scheduledAt])
+  @@index([batchId])
+  @@map("email_jobs")
+}
